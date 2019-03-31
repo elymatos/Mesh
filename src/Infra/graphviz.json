@@ -1,0 +1,57 @@
+{
+  "attributes": {
+    "rankdir": "LR",
+    "ranksep": "0.50",
+    "layout": "dot",
+    "forcelabels": "true",
+    "K": "0.5",
+    "nodesep": "0.1",
+    "fontSize": 8
+  },
+  "typeNode": {
+    "common": {
+      "labelType": "l",
+      "color": "white",
+      "bgcolor": "black",
+      "fontcolor": "white",
+      "style": "filled",
+      "shape": "box",
+      "fontColor": "white"
+    }
+  },
+  "typeEdge": {
+    "rel_common": {
+      "color": "black",
+      "style": "solid",
+      "penwidth": "1",
+      "arrowType": "empty"
+    }
+  },
+  "typeStatus": {
+    "inactive": {
+      "color": "whitesmoke",
+      "fontColor": "black"
+    },
+    "predictive": {
+      "color": "yellow",
+      "fontColor": "black"
+    },
+    "constrained": {
+      "color": "firebrick",
+      "fontColor": "black"
+    },
+    "exhausted": {
+      "color": "white",
+      "fontColor": "black"
+    },
+    "waiting": {
+      "color": "lightgrey",
+      "fontColor": "black"
+    },
+    "inhibited": {
+      "color": "brown",
+      "fontColor": "white"
+    }
+  }
+}
+
