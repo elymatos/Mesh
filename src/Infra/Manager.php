@@ -39,6 +39,10 @@ class Manager
         $this->logger = $logger;
     }
 
+    public function getLogger() {
+        return $this->logger;
+    }
+
     public function setContainer($container)
     {
         $this->container = $container;
@@ -59,12 +63,17 @@ class Manager
         $this->debug = $level;
     }
 
+    public function setDebug($debug = true)
+    {
+        $this->debug = $debug ? 2 : 0;
+    }
+
     public function dump($msg)
     {
         if ($this->debug) {
             //print_r($msg);
             //print_r("\n");
-            //$this->logger->info(print_r($msg, TRUE));
+            $this->logger->info(print_r($msg, TRUE));
         }
     }
 

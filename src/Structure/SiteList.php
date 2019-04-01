@@ -1,10 +1,10 @@
 <?php
-namespace Mesh\Element\Structure;
+namespace Net\Ematos\Mesh\Structure;
 
-use Mesh\Infra\Base;
+use Net\Ematos\Mesh\Infra\Base;
 
 /*
- * lista de Sites de uma TokenNetwork
+ * lista de Sites de um TokenNode
  * Vários métodos de acesso
  */
 class SiteList extends Base
@@ -12,14 +12,59 @@ class SiteList extends Base
     public $inputSites;
     public $outputSites;
     public $sites;
+    public $myTokenNode;
 
-    function __construct()
+    function __construct($myTokenNode = null)
     {
         $this->inputSites = [];
         $this->outputSites = [];
         $this->sites = [];
+        $this->myTokenNode = $myTokenNode;
     }
 
+    public function createInputSite($linkedNodeToken, $link) {
+        $site = new Site($linkedNodeToken->id, $link);
+        $this->sites[] = $site;
+        $this->inputSites[$linkedNodeToken->id] = $site;
+    }
+
+    public function createOutputSite($linkedNodeToken, $link) {
+        $site = new Site($linkedNodeToken->id, $link);
+        $this->sites[] = $site;
+        $this->outputSites[$linkedNodeToken->id] = $site;
+    }
+
+    public function getInputSiteFrom($linkedNodeToken, $create = true) {
+        $site =  $this->inputSites[$linkedNodeToken->id] ?? '';
+        if (($site == '') && $create) {
+            $link = $linkedNodeToken->tokenNetwork->getLinkFor($linkedNodeToken, $this->myTokenNode);
+            $site = $this->createInputSite($linkedNodeToken, $link);
+        }
+        return $site;
+    }
+
+    public function getOutputSiteTo($linkedNodeToken, $create = true) {
+        $site =  $this->outputSites[$linkedNodeToken->id] ?? '';
+        if (($site == '') && $create) {
+            $link = $linkedNodeToken->tokenNetwork->getLinkFor($this->myTokenNode, $linkedNodeToken);
+            $site = $this->createOutputSite($linkedNodeToken, $link);
+        }
+        return $site;
+    }
+
+    public function getOutputSites() {
+        return $this->outputSites;
+    }
+
+    public function getInputSites() {
+        return $this->inputSites;
+    }
+
+    public function getAllSites() {
+        return $this->sites;
+    }
+
+    /*
     public function initialize($idTokenNode) {
         $this->inputSites[$idTokenNode] = [];
         $this->outputSites[$idTokenNode] = [];
@@ -67,6 +112,8 @@ class SiteList extends Base
         return $site;
 
     }
+    */
+
 
 }
 

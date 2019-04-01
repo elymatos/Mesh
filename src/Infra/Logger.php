@@ -4,22 +4,39 @@ namespace Net\Ematos\Mesh\Infra;
 
 use Monolog\Logger as MonologLogger;
 use Monolog\Handler\SocketHandler;
+use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\LineFormatter;
 
 class Logger extends MonologLogger
 {
+    private $channelName;
+
     public function __construct($channelName)
     {
         parent::__construct($channelName);
-        $handler = new SocketHandler('127.0.0.1:9999');
-        $handler->setPersistent(true);
-        $this->pushHandler($handler, Logger::DEBUG);
-        // the default output format is "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n"
-        $output = "%level_name% > %message%\n";
-// finally, create a formatter
-        $formatter = new LineFormatter($output, '');
-
-        $handler->setFormatter($formatter);
-        //$this->info('My logger is now ready');
+        $this->channelName = $channelName;
     }
+
+    public function streamHandler($fileName = '') {
+        if ($fileName == '') {
+            $fileName = sys_get_temp_dir() . $this->channelName . '.log';
+        }
+        $handler = new StreamHandler($fileName, Logger::DEBUG);
+        $this->pushHandler($handler);
+        $output = "%level_name% > %message%\n";
+        $formatter = new LineFormatter($output, '');
+        $handler->setFormatter($formatter);
+    }
+
+    public function socketHandler($connectionString = '') {
+        if ($connectionString != '') {
+            $handler = new SocketHandler($connectionString);
+            $handler->setPersistent(true);
+            $this->pushHandler($handler, Logger::DEBUG);
+            $output = "%level_name% > %message%\n";
+            $formatter = new LineFormatter($output, '');
+            $handler->setFormatter($formatter);
+        }
+    }
+
 }

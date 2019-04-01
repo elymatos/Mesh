@@ -16,6 +16,7 @@ class Link extends Base
     public $inhibitory;
     public $head;
     public $multiple;
+    public $w;
 
     function __construct($idSource, $idTarget, $params)
     {
@@ -24,6 +25,7 @@ class Link extends Base
         $this->head = isset($params->head) ? (boolean)($params->head == '1') : false;
         $this->multiple = 9;//$params->multiple;
         $this->inhibitory = false;// ($params->inhibitory === true) ? true : false;
+        $this->w = $params->w ?? 1.0;
         $this->type = $params->type ?? '';
         $this->system = ($this->type == 'semantic') ? 'R' : 'S';
         $this->label = $params->label ?: $params->relation;
@@ -99,6 +101,11 @@ class Link extends Base
     public function getSystem()
     {
         return $this->system;
+    }
+
+    public function getW()
+    {
+        return $this->w;
     }
 
 }

@@ -346,8 +346,7 @@ class Image_GraphViz
             if ($this->_returnFalseOnError) {
                 return false;
             }
-            $error = PEAR::raiseError('Could not find dot file');
-            return $error;
+            throw new \Exception("File not found: " . $dotfile);
         }
 
         $oldmtime = file_exists($outputfile) ? filemtime($outputfile) : 0;
@@ -377,9 +376,8 @@ class Image_GraphViz
         } elseif ($this->_returnFalseOnError) {
             return false;
         }
-        $error = PEAR::raiseError($command_orig.' command failed: '
+        throw new \Exception($command_orig.' command failed: '
                                   .implode("\n", $msg));
-        return $error;
     }
 
     /**

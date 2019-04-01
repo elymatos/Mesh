@@ -1,6 +1,6 @@
 <?php
 
-namespace Net\Ematos\Mesh;
+namespace Net\Ematos\Mesh\Service;
 
 use Net\Ematos\Mesh\Infra\Manager;
 
@@ -46,11 +46,14 @@ class MeshService
     public $frameTree2;
     */
 
-    public function __construct()
+    public function __construct($definitions = '')
     {
 
 
         $this->containerBuilder = require __DIR__ . '/../DI/bootstrap.php';
+        if ($definitions != '') {
+            $this->containerBuilder->addDefinitions($definitions);
+        }
         $this->container = $this->containerBuilder->build();
         $this->manager = $this->container->get(Manager::class);
 
