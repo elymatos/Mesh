@@ -1,5 +1,5 @@
 <?php
-namespace Mesh\Element\Structure;
+namespace Net\Ematos\Mesh\Structure;
 
 class Slot
 {

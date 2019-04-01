@@ -1,8 +1,9 @@
 <?php
 
-namespace Mesh\Element\Node;
+namespace Net\Ematos\Mesh\Node;
 
-use Mesh\Element\Structure\Slot;
+use Net\Ematos\Mesh\Structure\Slot;
+use Net\Ematos\Mesh\Structure\SiteList;
 
 
 class TokenNode extends Node
@@ -10,7 +11,7 @@ class TokenNode extends Node
     public $tokenNetwork; // which network this token belongs to
     public $siteList; // shortcut for siteList from tokenNetwork
     public $index; // número sequencial do node dentro da tokenNetwork
-    public $wordIndex;  // indice da palavra na sentença associada a este node - uso do head
+    // public $wordIndex;  // indice da palavra na sentença associada a este node - uso do head
     public $slots; // palavras associadas a este node
     public $activation; // número de ativação de nodes deste type
     public $status; // inactive, waiting, predictive, active, constrained, inhibited, exhausted
@@ -24,15 +25,16 @@ class TokenNode extends Node
     public $a;
     public $o;
     public $energy;
-    public $headSlot;
-    public $depSlot;
+    // public $headSlot;
+    // public $depSlot;
 
     function __construct($id = '')
     {
         parent::__construct($id);
         $this->index = 0;
-        $this->wordIndex = 0;
+        // $this->wordIndex = 0;
         $this->slots = new Slot(0);
+        $this->siteList = new SiteList($this);
         $this->activation = 0;
         $this->status = 'inactive';
         $this->phase = '';
@@ -45,30 +47,35 @@ class TokenNode extends Node
         $this->o = 0;
         $this->w = 1;
         $this->energy = 10;
-        $this->headSlot = new Slot(0);
-        $this->depSlot = new Slot(0);
+        // $this->headSlot = new Slot(0);
+        // $this->depSlot = new Slot(0);
     }
 
     public function __get($name)
     {
         if ($name == 'inputSites') {
-            return $this->siteList->getInputSites($this->id);
+            return $this->siteList->getInputSites();
         }
         if ($name == 'outputSites') {
-            return $this->siteList->getOutputSites($this->id);
+            return $this->siteList->getOutputSites();
         }
         if ($name == 'sites') {
-            return $this->siteList->getAllSites($this->id);
+            return $this->siteList->getAllSites();
         }
         if (isset($this->typeNode->$name)) {
             return $this->typeNode->$name;
         }
     }
 
+    public function clearAll() {
+        unset($this->slots);
+        unset($this->siteList);
+    }
+
     public function setTokenNetwork($network)
     {
         $this->tokenNetwork = $network;
-        $this->siteList = $network->siteList;
+        // $this->siteList = $network->siteList;
     }
 
     public function setIndex($index)
@@ -197,16 +204,7 @@ class TokenNode extends Node
                 foreach ($inputSites as $site) {
                     if ($site->active()) {
 
-                        $sourceToken = $this->tokenNetwork->getNode($site->idSourceToken);
-
-                        if ($site->head()) {
-                            $this->wordIndex = $sourceToken->wordIndex;
-                            $this->idHead = $sourceToken->idHead;
-                            $this->h = $sourceToken->h;
-                            $this->d = $sourceToken->h;
-                        } else {
-                            $this->d = $sourceToken->h;
-                        }
+                        $sourceToken = $this->tokenNetwork->getNode($site->idLinkedToken);
                         $this->slots->merge($sourceToken->getSlots());
                         $a += $site->a;
                         if ($site->w > $w) {
@@ -256,14 +254,14 @@ class TokenNode extends Node
         return $next;
     }
 
-    public function spread($ident = '')
+    public function spread()
     {
         return [];
     }
 
     public function feedback($site, $ident = '')
     {
-        $previousNode = $this->tokenNetwork->getNode($site->idSourceToken);
+        $previousNode = $this->tokenNetwork->getNode($site->idLinkedToken);
         $previousNode->process = 'feedback';
         $site->activateFeedback();
         $previousIsPool = ($previousNode->logic == 'O');
@@ -294,15 +292,24 @@ class TokenNode extends Node
 
     public function createLinkTo($nodeToken)
     {
-        $site = $this->siteList->getOutputSiteFromTo($this, $nodeToken);
+        //$site = $this->siteList->getOutputSiteFromTo($this, $nodeToken);
+        $this->siteList->getOutputSiteTo($nodeToken);
     }
 
-    public function propagate($site, $ident = '')
+    public function createLinkFrom($nodeToken)
     {
-        $nextNode = $this->tokenNetwork->getNode($site->idTargetToken);
-        $site->a = $this->o;
-        $site->w = $this->w;
-        $this->dump($ident . '** propagating: ' . $this->getName() . '[' . $this->status . ']:' . $site->id . ':' . $site->status . ' -> ' . $nextNode->getName() . '[' . $nextNode->status . ':' . $nextNode->layer . ':' . $nextNode->phase . ']:' . $nextNode->id);
+        //$site = $this->siteList->getOutputSiteFromTo($this, $nodeToken);
+        $this->siteList->getInputSiteFrom($nodeToken);
+    }
+
+    public function propagate($site)
+    {
+        $nextNode = $this->tokenNetwork->getNode($site->idLinkedToken);
+        $site->activate($this->o, $this->w);
+        $nextSite = $nextNode->siteList->getInputSiteFrom($this);
+        $nextSite->activate($site->a, $site->w);
+
+        $this->dump('** propagating: ' . $this->getName() . '[' . $this->status . '][' . $site->id . ':' . $site->status . ':' . $site->a . ']'  . ' -> ' . $nextNode->getName() . '[' . $nextNode->status . '][' . $nextNode->layer . ':' . $nextNode->phase . '][' . $nextNode->id . '][' . $nextSite->id . ':' . $nextSite->status . ':' . $nextSite->a . ']' );
         return $nextNode;
     }
 
@@ -320,13 +327,13 @@ class TokenNode extends Node
 
         $children = [];
         foreach ($this->inputSites as $sitePool) {
-            $pool = $this->tokenNetwork->getNode($sitePool->idSourceToken);
+            $pool = $this->tokenNetwork->getNode($sitePool->idLinkedToken);
             foreach ($pool->inputSites as $siteRelay) {
-                $relay = $this->tokenNetwork->getNode($siteRelay->idSourceToken);
+                $relay = $this->tokenNetwork->getNode($siteRelay->idLinkedToken);
                 foreach ($relay->inputSites as $siteProjection) {
-                    $projection = $this->tokenNetwork->getNode($siteProjection->idSourceToken);
+                    $projection = $this->tokenNetwork->getNode($siteProjection->idLinkedToken);
                     foreach ($projection->inputSites as $siteFeature) {
-                        $feature = $this->tokenNetwork->getNode($siteFeature->idSourceToken);
+                        $feature = $this->tokenNetwork->getNode($siteFeature->idLinkedToken);
                         $children[] = $feature;
                     }
                 }

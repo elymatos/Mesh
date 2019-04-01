@@ -4,34 +4,7 @@ namespace Net\Ematos\Mesh\Infra;
 class GraphViz
 {
 
-    /* nodes [
-            'index' => $i,
-            'id' => $node->getId(),
-            'name' => utf8_encode($node->getLabel()),
-            'position' => $node->index,
-            'activation' => round($node->getO(), 5),
-            'type' => $node->getType(),
-            'status' => $node->status,
-            'group' => $node->group
-       ];
-
-        links [
-            'source' => $cola[$node->getId()],
-            'target' => $cola[$this->getSite($target)->idNode()],
-            'label' => $site->label() ?: 'rel_common',
-            'status' => (($site->active() || $site->predictive()) ? 'active' : 'inactive'),
-            'optional' => $site->optional()
-        ];
-
-        groups[nameGroup][link]
-
-     */
-
     public $structure;
-    public $typeNode;
-    public $typeEdge;
-    public $typeStatus;
-    public $graphAttributes;
     public $fontSize;
     public $definitions;
 
@@ -52,10 +25,16 @@ class GraphViz
         return $dot;
     }
 
+    public function generateImage($dotfile, $outputfile, $format = 'svg', $command = 'dot') {
+
+        $graph = $this->createGraph();
+        $graph->renderDotFile($dotfile, $outputfile, $format, $command);
+    }
+
     public function createGraph()
     {
         $directed = true;
-        $graph = new Image_GraphViz($directed, ['colorscheme' => 'svg'], 'G', false, true);
+        $graph = new Image_GraphViz($directed, ['colorscheme' => $this->definitions->attributes->colorScheme], 'G', false, true);
         if (isset($this->structure->regions)) {
             $regions = $this->structure->regions;
             foreach ($regions as $region) {
@@ -73,26 +52,16 @@ class GraphViz
         return $graph;
     }
 
-    public function getInfo($node) {
+    protected function getInfo($node) {
         return '';
     }
 
-    public function getNodeDefinition($node) {
+    protected function getNodeDefinition($node) {
 
         $nodeType = $node['type'];
         $definitions = $this->definitions->typeNode->$nodeType;
         $labelType = $definitions->labelType ?: 'x';
         $a = '';
-        /*
-        $a = substr($node['activation'],0,6);
-        $words = '';
-        $slots = $node['slots'];
-        for($i = 1; $i <= count($this->words); $i++) {
-            if ($slots->get($i)) {
-                $words .= $this->words[$i] . ' ';
-            }
-        }
-        */
         $info = $this->getInfo($node);
 
         if ($labelType == 'l') {
@@ -108,30 +77,12 @@ class GraphViz
             $xlabel = $info;
         }
         $style = $definitions->style;
-        /*
-        $status = $node['status'];
-        if ($status == 'active') {
-            $color = $this->typeNode[$nodeType]['bgcolor'];
-            $fontColor = $this->typeNode[$nodeType]['fontColor'] ?: 'black';
-        } else {
-            //$color = $this->typeStatus[$status]['color'];
-            //$fontColor = $this->typeStatus[$status]['fontColor'] ?: 'black';
-            $color = 'white';
-            $fontColor = 'black';
-        }
-        */
         $color = $definitions->bgcolor;
         $fontColor = $definitions->fontColor ?: 'black';
         $tooltip = $xlabel;
         $xlabel = '';
 
         $shape = $definitions->shape;
-        /*
-        if ($node['logic'] == 'N') {
-            $shape = 'component';
-            $label = $xlabel = '';
-        }
-        */
         $size = (($shape == 'triangle')) ? '0.15' : '0.1';
 
         return (object)[
@@ -181,12 +132,10 @@ class GraphViz
         foreach ($links as $link) {
             $linkLabel = $link['label'];
             $definitions = $this->definitions->typeEdge->$linkLabel;
-            print_r($definitions);
             $label = '';//' ' . $e[1];
             $optional = $link['optional'];
             $head = $link['head'];
             $color = ($link['status'] == 'active') ? $definitions->color : 'gray';
-            //var_dump($t);
             $graph->addEdge(
                 [
                     $link['source'] => $link['target'],

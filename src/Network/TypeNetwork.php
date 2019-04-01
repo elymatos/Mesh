@@ -73,7 +73,7 @@ class TypeNetwork extends LinkNetwork
 
     public function getIdNodesOutput($idNode)
     {
-        if (count($this->nodesOutput[$idNode])) {
+        if (isset($this->nodesOutput[$idNode])) {
             return array_keys($this->nodesOutput[$idNode]);
         } else {
             return [];

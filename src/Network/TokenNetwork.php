@@ -1,14 +1,14 @@
 <?php
 
-namespace Net\Mesh\Mesh\Network;
+namespace Net\Ematos\Mesh\Network;
 
-use \Net\Ematos\Mesh\Structure\ {
+use Net\Ematos\Mesh\Structure\ {
     SiteList, Link
 };
-use \Net\Ematos\Mesh\Node\ {
+use Net\Ematos\Mesh\Node\ {
     RelayNode, ConstraintNode
 };
-use \Net\Ematos\Mesh\Node\Constraint\ {
+use Net\Ematos\Mesh\Node\Constraint\ {
     ConstraintAndNode,
     ConstraintAfterNode,
     ConstraintBeforeNode,
@@ -23,36 +23,45 @@ use \Net\Ematos\Mesh\Node\Constraint\ {
     ConstraintXORNode,
     ConstraintNearNode
 };
-use \Net\Ematos\Mesh\Infra\ {
+use Net\Ematos\Mesh\Infra\ {
     GraphViz
 };
 
 class TokenNetwork extends Network
 {
     public $typeNetwork;
-    public $firstNode;
-    public $siteList;
-    public $wordOrder; // posição da palavra na sentença
+
+
+
+    //public $siteList;
+
+    //public $wordOrder; // posição da palavra na sentença
+
     public $activations; // número de tokens que já foram instanciados para um dado type
     public $projections; // count for projections of a featureNode
+
     public $tokensByType; // listas dos tokens instanciados pelo idNodeType
     public $tokensByClass; // listas dos tokens instanciados pela class
+
     public $statusMemory;
     public $className;
     public $rootNodes;
+
     public $activation; // incrementado cada vez que um nó é processado
+
+    public $debug;
 
     public function __construct()
     {
         parent::__construct();
-        $this->siteList = new SiteList();
+        //$this->siteList = new SiteList();
         $this->activation = 0;
         $this->activations = [];
         $this->projections = [];
         $this->tokensByType = [];
         $this->tokensByClass = [];
         $this->rootNodes = [];
-        $this->wordOrder = 1;
+        //$this->wordOrder = 1;
     }
 
     public function setTypeNetwork(TypeNetwork $typeNetwork)
@@ -64,6 +73,7 @@ class TokenNetwork extends Network
     {
         foreach ($this->nodes as $node) {
             $id = $node->getId();
+            $node->clearAll();
             unset($this->nodes[$id]);
         }
         $this->nodes = [];
@@ -77,17 +87,14 @@ class TokenNetwork extends Network
         $this->tokensByClass = [];
         $this->statusMemory = [];
         $this->rootNodes = [];
-        $this->siteList = new SiteList();
+        $this->tokens =[];
+        $this->tokenLinks =[];
+        // $this->siteList = new SiteList();
     }
 
     public function createNode($id, $params = [])
     {
-        //$this->manager->dump($params);
-        //$className = $this->className[$params['type']];
-        $className = 'Node'. $params['type'];
-        //$this->manager->dump('creating token node classname = ' . $className);
-        //$node = new $className($id);
-        //print_r('createNode: ' . $className . ' name = ' . $params['name'] ."\n");
+        $className = strtolower($params['type']) . 'Node';
         $node = $this->container->make($className);
         $node->setId($id);
         $node->setTokenNetwork($this);
@@ -106,7 +113,7 @@ class TokenNetwork extends Network
         $tokenNode = $this->getOrCreateNode($id, $params);
         $tokenNode->debug = $this->debug;
         $tokenNode->typeNode = $tokenNode;
-        $this->siteList->initialize($id);
+        // $this->siteList->initialize($id);
         if ($params->class != '') {
             $this->pushTokenByClass($params->class, $tokenNode);
         }
@@ -116,6 +123,9 @@ class TokenNetwork extends Network
     public function createNodeToken($typeNode, $tokenForProjection = null)
     {
         if (is_null($tokenForProjection)) {
+            if (!isset($this->activations[$typeNode->id])) {
+                $this->activations[$typeNode->id] = 0;
+            }
             $activation = ++$this->activations[$typeNode->id];
             $id = $typeNode->id . '_' . $activation;
         } else {
@@ -126,32 +136,31 @@ class TokenNetwork extends Network
         $params = [
             'type' => $typeNode->type,
             'name' => $name,
-            //'activation' => $activation,
             'status' => 'inactive',
             'logic' => $typeNode->logic,
             'class' => $typeNode->class,
             'category' => $typeNode->category,
-            'h' => $typeNode->wordIndex,//$typeNode->h,
-            'd' => $typeNode->wordIndex,//$typeNode->d,
-            'idHead' => $typeNode->idHead,
-            'wordIndex' => $typeNode->wordIndex
+            //'h' => $typeNode->wordIndex,//$typeNode->h,
+            //'d' => $typeNode->wordIndex,//$typeNode->d,
+            //'idHead' => $typeNode->idHead,
+            //'wordIndex' => $typeNode->wordIndex
         ];
         $tokenNode = $this->getOrCreateNode($id, $params);
         $tokenNode->typeNode = $typeNode;
         $tokenNode->region = ($typeNode->region ?: $this->region);
         $tokenNode->debug = $this->debug;
-        $this->siteList->initialize($id);
+        //$this->siteList->initialize($id);
         $this->pushTokenByType($typeNode->id, $tokenNode);
         if ($typeNode->class != '') {
             $this->pushTokenByClass($typeNode->class, $tokenNode);
         }
         // inicializa o slot no caso de words
+        /*
         if (($typeNode->type == 'word') && ($activation == 1)) {
             $tokenNode->setLayer(0);
-            //$tokenNode->wordIndex = $typeNode->wordIndex;
             $tokenNode->getSlots()->set($typeNode->wordIndex);
-            //++$this->wordOrder;
         }
+        */
         return $tokenNode;
     }
 
@@ -163,7 +172,7 @@ class TokenNetwork extends Network
         }
         if (!($link instanceof Link)) {
             $link = $this->typeNetwork->createLinkById($sourceNodeToken->id, $targetNodeToken->id, [
-                'label' => 'rel_value',
+                'label' => 'rel_common',
                 'optional' => $sourceNodeToken->optional,
                 'head' => $sourceNodeToken->head
             ]);
@@ -171,7 +180,7 @@ class TokenNetwork extends Network
         return $link;
     }
 
-
+    /*
     public function createSite($sourceNodeToken, $targetNodeToken, $link = null)
     {
         if ($link == null) {
@@ -179,6 +188,7 @@ class TokenNetwork extends Network
         }
         $this->siteList->createSite($sourceNodeToken, $targetNodeToken, $link);
     }
+    */
 
     public function pushTokenByClass($class, $nodeToken)
     {
@@ -226,12 +236,128 @@ class TokenNetwork extends Network
         return $available;
     }
 
+    /*
+     * Build
+     */
+
+    public function build($idNode)
+    {
+        $processed = [];
+        $baseNode = $this->typeNetwork->getNode($idNode);
+        $idBaseNode = $baseNode->getId();
+        $next = [$idBaseNode];
+        while (count($next) > 0) {
+            $this->dump('= outer =========');
+            $nextNodes = [];
+            foreach ($next as $idTypeNode) {
+                $typeNode = $this->typeNetwork->getNode($idTypeNode);
+                $this->dump('- begin ------- ' . $typeNode->name);
+                if(!isset($processed[$idTypeNode])) {
+                    $baseToken = $this->createTokenById($idTypeNode);
+                    $idNextNodes = $this->typeNetwork->getIdNodesOutput($idTypeNode);
+                    if (count($idNextNodes)) {
+                        foreach ($idNextNodes as $idNextNode) {
+                            if (!isset($this->tokens[$idNextNode])) {
+                                $nextToken = $this->createTokenById($idNextNode);
+                            } else {
+                                $nextToken = $this->tokens[$idNextNode];
+                            }
+                            $this->createTokenLink($baseToken, $nextToken);
+                            $nextNodes[$idNextNode] = $idNextNode;
+                        }
+                    }
+                    $this->typeNodes[$idTypeNode] = $idTypeNode;
+                    $processed[$idTypeNode] = $idTypeNode;
+                }
+                $this->dump('- end -------');
+            }
+            $next = $nextNodes;
+            $this->dump('= end outer ========= ' . count($next) . ' next');
+        }
+    }
+
+    public function createToken($typeNode)
+    {
+        $id = $typeNode->getId();
+        if (isset($this->tokens[$id])) {
+            return $this->tokens[$id];
+        }
+        $tokenNode = $this->createNodeToken($typeNode);
+        $this->tokens[$id] = $tokenNode;
+        return $tokenNode;
+    }
+
+    public function createTokenById($idTypeNode)
+    {
+        return $this->createToken($this->typeNetwork->getNode($idTypeNode));
+    }
+
+    public function createTokenLink($baseToken, $nextToken) {
+        $idBaseToken = $baseToken->id;
+        $idNextToken = $nextToken->id;
+        if ((!isset($this->tokenLinks[$idBaseToken][$idNextToken])) && (!isset($this->tokenLinks[$idNextToken][$idBaseToken]))) {
+            $baseToken->createLinkTo($nextToken);
+            $this->tokenLinks[$idBaseToken][$idNextToken] = 1;
+            $nextToken->createLinkFrom($baseToken);
+            $this->tokenLinks[$idNextToken][$idBaseToken] = 1;
+        }
+    }
+
+    /*
+     * Activation
+     */
+
+    public function activate($idNode)
+    {
+        $this->currentLayer = 0;
+        $this->currentPhase = 'feature';
+        $baseNode = $this->typeNetwork->getNode($idNode);
+        $idBaseNode = $baseNode->getId();
+        $baseToken = $this->tokens[$idBaseNode];
+        $baseToken->status = 'active';
+        $baseToken->a = 1;
+        $this->nextNodes = $baseToken->fire();
+        $end = (count($this->nextNodes) == 0);
+        return $end;
+    }
+
+    public function activateNext()
+    {
+        $this->dump('*************************************************************');
+        $this->dump('***** activateNext');
+        $this->dump('*************************************************************');
+        $next = [];
+        foreach($this->nextNodes as $nextNode) {
+            $nextNodes = $nextNode->process();
+            if(count($nextNodes)) {
+                foreach($nextNodes as $nextNode) {
+                    $next[] = $nextNode;
+                }
+            }
+        }
+        $this->nextNodes = $next;
+        $end = (count($this->nextNodes) == 0);
+        $this->dump('*************************************************************');
+        $this->dump('***** end activateNext - more? ' . ($end ? 'no' : 'yes'));
+        $this->dump('*************************************************************');
+        foreach($this->nextNodes as $nextNode) {
+            $this->dump('-> ' . $nextNode->name);
+        }
+        return $end;
+    }
+
+
+    /*
+     * Structure
+     */
+
     public function getStructure()
     {
         $structure = (object)[
             'nodes' => [],
             'links' => [],
             'groups' => [],
+            'layers' => []
         ];
         $slots = [];
         $i = 0;
@@ -253,6 +379,7 @@ class TokenNetwork extends Network
                 'name' => $node->getName(),
                 'position' => $node->index,
                 'activation' => $node->activation, //round($node->getA(), 5),
+                'o' => $node->o,
                 'type' => $node->getType(),
                 'class' => $node->getClass(),
                 'status' => $node->status,
@@ -278,9 +405,10 @@ class TokenNetwork extends Network
         //    $layers[$region] = $this->manager->regionNetwork->getLayerByRegion($region);
         //}
         foreach ($this->nodes as $node) {
-            foreach ($this->siteList->getOutputSites($node->id) as $site) {
+            foreach ($node->siteList->getOutputSites() as $site) {
+                //var_dump($site);
                 $idSource = $node->getId();
-                $idTarget = $site->idTargetToken;
+                $idTarget = $site->idLinkedToken;
                 if (isset($cola[$idSource]) && isset($cola[$idTarget])) {
                     $sourceNode = $cola[$idSource];
                     $targetNode = $cola[$idTarget];
@@ -303,7 +431,7 @@ class TokenNetwork extends Network
             }
         }
         $structure->regions = $regions;
-        $structure->layers = $layers;
+        //$structure->layers = $layers;
         return $structure;
     }
 

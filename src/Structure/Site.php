@@ -1,7 +1,7 @@
 <?php
-namespace Mesh\Element\Structure;
+namespace Net\Ematos\Mesh\Structure;
 
-use Mesh\Infra\Base;
+use Net\Ematos\Mesh\Infra\Base;
 
 class Site extends Base
 {
@@ -9,23 +9,24 @@ class Site extends Base
     public $id;
     public $idSourceToken;
     public $idTargetToken;
+    public $idLinkedToken;
     public $link;
     public $status; // 'frozen', 'active', 'inactive', 'inhibited'
     public $a;
     public $forward;
     public $feedback;
-    public $w;
 
 
-    function __construct($idSourceToken, $idTargetToken, $link)
+    //function __construct($idSourceToken, $idTargetToken, $link)
+    function __construct($idLinkedToken, $link)
     {
         $this->id = ++self::$staticId;
-        $this->idSourceToken = $idSourceToken;
-        $this->idTargetToken = $idTargetToken;
+        //$this->idSourceToken = $idSourceToken;
+        //$this->idTargetToken = $idTargetToken;
+        $this->idLinkedToken = $idLinkedToken;
         $this->link = $link;
         $this->status = 'inactive';
         $this->a = 0;
-        $this->w = 1;
         $this->forward = $this->feedback = false;
     }
 
@@ -41,6 +42,12 @@ class Site extends Base
         return ($this->status == 'active');
     }
 
+    public function activate($a, $w) {
+        $this->a = $a;
+        $this->w = $w;
+        $this->status = 'active';
+    }
+
     public function label() {
         return $this->link->label;
     }
@@ -51,6 +58,10 @@ class Site extends Base
 
     public function head() {
         return $this->link->head;
+    }
+
+    public function w() {
+        return $this->link->w;
     }
 
     public function isInhibited() {

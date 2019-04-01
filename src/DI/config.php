@@ -18,10 +18,13 @@ return [
         ->method('setManager', DI\get(Manager::class))
         ->method('setGraphViz', DI\get(GraphViz::class)),
     'TokenNetwork' => create('Net\Ematos\Mesh\Network\TokenNetwork')
-        ->method('setManager', DI\get(Manager::class)),
+        ->method('setManager', DI\get(Manager::class))
+        ->method('setGraphViz', DI\get(GraphViz::class)),
     'RegionNetwork' => create('Net\Ematos\Mesh\Network\RegionNetwork')
         ->method('setManager', DI\get(Manager::class)),
-
+    'commonNode' => function() {
+        return new Net\Ematos\Mesh\Node\Feature\CommonNode();
+    },
 /*
 
 

@@ -1,5 +1,6 @@
 {
   "attributes": {
+    "colorScheme" : "svg",
     "rankdir": "LR",
     "ranksep": "0.50",
     "layout": "dot",

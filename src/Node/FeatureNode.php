@@ -1,5 +1,6 @@
 <?php
-namespace Mesh\Element\Node;
+
+namespace Net\Ematos\Mesh\Node;
 
 
 class FeatureNode extends TokenNode
@@ -10,15 +11,15 @@ class FeatureNode extends TokenNode
         return (($this->energy > 0) && (($this->status == 'active') || ($this->status == 'fired')));
     }
 
-    protected function spreadForward($ident = '')
+    protected function spreadForward()
     {
         $next = [];
         foreach ($this->outputSites as $site) {
             //if ($site->forward) {
             //    continue;
             //}
-            $this->dump($ident . 'spreading from site [' . $site->id . ' ' . $site->label . ' ' . $site->status . ' ' . $site->type . ' ' . $site->idATargetToken . ']');
-            $nextNodes = $this->feedforward($site, $ident);
+            $this->dump( 'spreading from site [' . $site->id . ' ' . $site->label . ' ' . $site->status . ' ' . $site->type . ' ' . $site->idATargetToken . ']');
+            $nextNodes = $this->feedforward($site);
             foreach ($nextNodes as $nextNode) {
                 $next[$nextNode->id] = $nextNode;
             }
@@ -26,7 +27,7 @@ class FeatureNode extends TokenNode
         return $next;
     }
 
-    protected function spreadBack($ident = '')
+    protected function spreadBack()
     {
         $next = [];
         foreach ($this->inputSites as $site) {
@@ -39,8 +40,8 @@ class FeatureNode extends TokenNode
             if ($site->label == 'rel_projection') {
                 continue;
             }
-            $this->dump($ident . 'feedback to input site ' . $site->id . ' ' . $site->label . ' ' . $site->status . ' ' . $site->idSourceToken);
-            $nextNodes = $this->feedback($site, $ident);
+            $this->dump('feedback to input site ' . $site->id . ' ' . $site->label . ' ' . $site->status . ' ' . $site->idSourceToken);
+            $nextNodes = $this->feedback($site);
             foreach ($nextNodes as $nextNode) {
                 $next[$nextNode->id] = $nextNode;
             }
@@ -48,23 +49,24 @@ class FeatureNode extends TokenNode
         return $next;
     }
 
-    public function spreadBoth($ident = '')
+    public function spreadBoth()
     {
-        foreach ($this->spreadBack($ident) as $nextNode) {
+        foreach ($this->spreadBack() as $nextNode) {
             $next[$nextNode->id] = $nextNode;
         }
-        foreach ($this->spreadForward($ident) as $nextNode) {
+        foreach ($this->spreadForward() as $nextNode) {
             $next[$nextNode->id] = $nextNode;
         }
         return $next;
     }
 
 
-    public function spread($ident = '') {
-        return $this->spreadForward($ident);
+    public function spread()
+    {
+        return $this->spreadForward();
     }
 
-    public function inheritance($ident = '')
+    public function inheritance()
     {
     }
 
@@ -72,15 +74,9 @@ class FeatureNode extends TokenNode
     {
         $this->status = 'active';
         parent::updateStatus();
-        $isActive = ($this->status == 'active');// && (count($this->outputSites) > 0);
-        //if ($isActive) {
-        //    foreach ($this->outputSites as $site) {
-        //        $isActive = $isActive && $site->active();
-        //    }
-        //}
+        $isActive = ($this->status == 'active');
         $this->status = ($isActive ? 'active' : 'predictive');
     }
-
 
 }
 
